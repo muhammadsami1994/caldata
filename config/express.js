@@ -48,6 +48,11 @@ module.exports = function (app, config) {
     controllers3.forEach(function (controller) {
         require(controller)(app);
     });
+    var controllers4 = glob.sync(config.root + '/app/controllers/home.js');
+
+    controllers4.forEach(function (controller) {
+        require(controller)(app);
+    });
 
     app.use(function (req, res, next) {
         var err = new Error('Not Found');
