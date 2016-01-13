@@ -122,7 +122,7 @@ router.post('/uploadProductImage', function (req, res, next) {
                     file.pipe(_fstream);
                     _fstream.on('close', function () {
                         var imageURL = 'http://localhost:3000/userItems/?userId=' + userId + "&imageName=" + filename;
-                        mongoose.model('Conversation_Room').update({_id: _id},
+                        mongoose.model('usersItems').update({_id: _id},
                             {
                                 $set: {
                                     image : imageURL
