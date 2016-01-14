@@ -10,7 +10,7 @@ module.exports = function (app) {
 
 router.post('/login', function (req, res, next) {
 
-    var userId  = req.body.userId || req.query.userId || req.headers.userId;
+    var userId  = req.body.userId || req.query.userId || req.headers.userid;
     var password  = req.body.password || req.query.password || req.headers.password;
 
     if(userId && password)

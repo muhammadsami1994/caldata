@@ -101,64 +101,72 @@ router.post('/uploadProductImage', function (req, res, next) {
     var _id = req.body._id || req.query._id || req.headers._id;
     var _fstream;
     var checked = false;
-    mkdirp('images/' + userId, function (err) {
-        if (err) {
-            console.error(err);
-            res.send({
-                code: 500,
-                content: 'Internal Server Error',
-                msg: 'API not called properly',
-                token: req.___new__token
-            });
-        }
-        else {
-            console.log('New Directory Made!');
-            console.log(req.headers['content-type']);
-            if (req.busboy) {
-                req.pipe(req.busboy);
-                req.busboy.on('file', function (fieldname, file, filename) {
-                    console.log("Uploading: " + filename);
-                    _fstream = fs.createWriteStream("images/" + userId + '/' + filename);
-                    file.pipe(_fstream);
-                    _fstream.on('close', function () {
-                        var imageURL = 'http://localhost:3000/userItems/?userId=' + userId + "&imageName=" + filename;
-                        mongoose.model('usersItems').update({_id: _id},
-                            {
-                                $set: {
-                                    image : imageURL
-                                }
-                            }, function (error, response) {
-
-                                if (err) {
-                                    console.log('Product not found');
-                                    res.send({
-                                        code: 400,
-                                        content: 'Bad Request',
-                                        msg: 'Error! Image is not uploaded',
-                                        token: req.___new__token
-                                    });
-                                }
-                                else {
-                                    console.log('Picture Response is sent to frontend');
-                                    res.send({
-                                        code: 200,
-                                        content: 'OK',
-                                        msg: 'Image is uploaded',
-                                        token: req.___new__token
-                                    });
-                                }
-                            });
-                    });
-                });
-            } else {
+    if(userId && _id){
+        mkdirp('images/' + userId, function (err) {
+            if (err) {
+                console.error(err);
                 res.send({
-                    code: 404,
-                    content: 'Not Found',
-                    msg: 'Image not Found in request'
-                })
+                    code: 500,
+                    content: 'Internal Server Error',
+                    msg: 'API not called properly',
+                    token: req.___new__token
+                });
             }
-        }
-    });
+            else {
+                console.log('New Directory Made!');
+                console.log(req.headers['content-type']);
+                if (req.busboy) {
+                    req.pipe(req.busboy);
+                    req.busboy.on('file', function (fieldname, file, filename) {
+                        console.log("Uploading: " + filename);
+                        _fstream = fs.createWriteStream("images/" + userId + '/' + filename);
+                        file.pipe(_fstream);
+                        _fstream.on('close', function () {
+                            var imageURL = 'http://localhost:3000/getProductImage/?userId=' + userId + "&imageName=" + filename;
+                            mongoose.model('usersItems').update({_id: _id},
+                                {
+                                    $set: {
+                                        image : imageURL
+                                    }
+                                }, function (error, response) {
+
+                                    if (err) {
+                                        console.log('Product not found');
+                                        res.send({
+                                            code: 400,
+                                            content: 'Bad Request',
+                                            msg: 'Error! Image is not uploaded',
+                                            token: req.___new__token
+                                        });
+                                    }
+                                    else {
+                                        console.log('Picture Response is sent to frontend');
+                                        res.send({
+                                            code: 200,
+                                            content: 'OK',
+                                            msg: 'Image is uploaded',
+                                            token: req.___new__token
+                                        });
+                                    }
+                                });
+                        });
+                    });
+                } else {
+                    res.send({
+                        code: 404,
+                        content: 'Not Found',
+                        msg: 'Image not Found in request'
+                    })
+                }
+            }
+        });
+    }else{
+        res.send({
+            code: 404,
+            content: 'Not Found',
+            msg: 'Missing Credentials'
+        });
+    }
 });
 router.get('/getProductImage', function (req, res, next) {
     var _imageName = req.body.imageName || req.query.imageName || req.headers.imagename,
