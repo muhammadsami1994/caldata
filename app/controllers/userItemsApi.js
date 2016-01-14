@@ -122,7 +122,7 @@ router.post('/uploadProductImage', function (req, res, next) {
                         _fstream = fs.createWriteStream("images/" + userId + '/' + filename);
                         file.pipe(_fstream);
                         _fstream.on('close', function () {
-                            var imageURL = 'http://localhost:3000/getProductImage/?userId=' + userId + "&imageName=" + filename;
+                            var imageURL = 'https://calday.herokuapp.com/getProductImage/?userId=' + userId + "&imageName=" + filename;
                             mongoose.model('usersItems').update({_id: _id},
                                 {
                                     $set: {
