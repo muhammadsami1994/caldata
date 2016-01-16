@@ -20,13 +20,13 @@ router.post('/signUp', function (req, res, next) {
             if (err) {
                 res.send({
                     code: 500,
-                    content: 'Not Found',
+                    content: 'Error',
                     msg: err.errors
                 });
             }
             else if (userData != null) {
                 res.send({
-                    code: 201,
+                    code: 200,
                     content: 'Sign Up successful',
                     msg: 'User created successfully'
                 });
@@ -34,8 +34,8 @@ router.post('/signUp', function (req, res, next) {
             else{
                 res.send({
                     code: 404,
-                    content: 'Appointment Not Found',
-                    msg: 'Not found'
+                    content: 'Error',
+                    msg: 'Error in creation'
                 });
             }
         })
