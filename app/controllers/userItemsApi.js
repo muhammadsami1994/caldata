@@ -2,6 +2,7 @@ var express = require('express'),
     router = express.Router(),
     mongoose = require('mongoose'),
     usersItems = mongoose.model('usersItems'),
+    productsTotal = mongoose.model('productsTotal'),
     mkdirp = require('mkdirp'),
     fs = require('fs'),
     Busboy = require('connect-busboy');
@@ -35,17 +36,69 @@ router.post('/userItems', function (req, res, next) {
             if (err) {
                 res.send({
                     code: 500,
-                    content: 'Not Found',
+                    content: 'Not Found in user item',
                     msg: 'Internal Server Error',
                     error: err
                 });
             }
             else if (item != null) {
-                res.send({
-                    code: 200,
-                    content: 'Item saved successfully',
-                    msg: item.productName + ' saved successfully',
-                    product : item
+                productsTotal.findOne({
+                    userId : userId,
+                    date : date,
+                    month : month,
+                    year : year
+                },function(err,data){
+                    if(err){
+                        res.send({
+                            code: 500,
+                            content: 'Not Found product total',
+                            msg: 'Internal Server Error',
+                            error: err
+                        });
+                    }else if(data != null){
+                        var total = data.total + item.total;
+                        productsTotal.update({
+                            userId : userId,
+                            date : date,
+                            month : month,
+                            year : year
+                        },{
+                            $set :{
+                                total : total
+                            }
+                        },function(){
+                            res.send({
+                                code: 200,
+                                content: 'Item saved successfully',
+                                msg: item.productName + ' saved successfully',
+                                product : item
+                            });
+                        })
+                    }else if(data == null){
+                        productsTotal.create({
+                            userId : userId,
+                            date : date,
+                            month : month,
+                            year : year,
+                            total : item.total
+                        },function(err,data2){
+                            if(err){
+                                res.send({
+                                    code: 500,
+                                    content: 'Not Found product total create',
+                                    msg: 'Internal Server Error',
+                                    error: err
+                                });
+                            }else if(data2 != null){
+                                res.send({
+                                    code: 200,
+                                    content: 'Item saved successfully',
+                                    msg: item.productName + ' saved successfully',
+                                    product : item
+                                });
+                            }
+                        })
+                    }
                 });
             }
         })
@@ -190,4 +243,38 @@ router.get('/getProductImage', function (req, res, next) {
             console.log('Sent:', _imageName);
         }
     });
+});
+router.get('/userItemsByMonth', function (req, res, next) {
+    var userId = req.body.userId || req.query.userId || req.headers.userid;
+    var month = req.body.month || req.query.month || req.headers.month;
+    if (userId && month) {
+        productsTotal.find({
+            userId: userId,
+            month : month
+
+        }, function (err, item) {
+            if (err) {
+                res.send({
+                    code: 500,
+                    content: 'Not Found',
+                    msg: 'Internal Server Error',
+                    error: err
+                });
+            }
+            else if (item != null) {
+                res.send({
+                    code: 200,
+                    content: 'Products found',
+                    products: item
+                });
+            }
+        })
+    }
+    else {
+        res.send({
+            code: 404,
+            content: 'Not Found',
+            msg: 'Missing Credentials'
+        });
+    }
 });
