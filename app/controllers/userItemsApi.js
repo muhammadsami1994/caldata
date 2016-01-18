@@ -145,7 +145,7 @@ router.post('/uploadProductImage', function (req, res, next) {
                                             code: 200,
                                             content: 'OK',
                                             msg: 'Image is uploaded',
-                                            token: req.___new__token
+                                            imageURL : imageURL
                                         });
                                     }
                                 });
