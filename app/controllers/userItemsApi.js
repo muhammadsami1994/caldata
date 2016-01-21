@@ -111,6 +111,20 @@ router.post('/userItems', function (req, res, next) {
         });
     }
 });
+router.post('/userItems', function (req, res, next) {
+    var userId = req.body.userId || req.query.userId || req.headers.userid;
+    var productArray = req.body.productArray || req.query.productArray || req.headers.productarray ;
+    if (userId && productArray) {
+
+    }
+    else {
+        res.send({
+            code: 404,
+            content: 'Not Found from save products array',
+            msg: 'Missing Credentials'
+        });
+    }
+});
 router.get('/userItems', function (req, res, next) {
     var userId = req.body.userId || req.query.userId || req.headers.userid;
     var date = req.body.date || req.query.date || req.headers.date;
