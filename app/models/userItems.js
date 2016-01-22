@@ -4,6 +4,8 @@ var mongoose = require('mongoose'),
 
 var usersItems = new Schema({
     userId : {type : String},
+    userProduct : [{
+    productID : {type : String},
     productName : {type : String},
     quantity: {type : Number},
     pricePerUnit : { type : Number},
@@ -12,6 +14,7 @@ var usersItems = new Schema({
     date : { type : Number},
     month : { type : Number},
     year : { type : Number}
+    }]
 });
 
 mongoose.model('usersItems', usersItems );

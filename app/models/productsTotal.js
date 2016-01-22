@@ -4,10 +4,12 @@ var mongoose = require('mongoose'),
 
 var productsTotal = new Schema({
     userId : {type : String},
-    date : { type : Number},
-    month : { type : Number},
-    year : { type : Number},
-    total : { type : Number}
+    userProductTotal : [{
+        date : { type : Number},
+        month : { type : Number},
+        year : { type : Number},
+        total : { type : Number}
+    }]
 });
 
 mongoose.model('productsTotal', productsTotal);

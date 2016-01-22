@@ -20,107 +20,159 @@ router.post('/userItems', function (req, res, next) {
     var date = req.body.date || req.query.date || req.headers.date;
     var month = req.body.month || req.query.month || req.headers.month;
     var year = req.body.year || req.query.year || req.headers.year;
-    if (userId && productName && quantity && pricePerUnit && date && month && year) {
+    var dayTotal = req.body.dayTotal || req.query.dayTotal || req.headers.daytotal;
+    if (userId && productName && quantity && pricePerUnit && date && month && year && req.body.dayTotal>=0 ) {
         var total = quantity * pricePerUnit;
-        usersItems.create({
-            userId: userId,
-            productName: productName,
-            quantity: quantity,
-            pricePerUnit: pricePerUnit,
-            total: total,
-            date : date,
-            month : month,
-            year : year
-
-        }, function (err, item) {
-            if (err) {
-                res.send({
-                    code: 500,
-                    content: 'Not Found in user item',
-                    msg: 'Internal Server Error',
-                    error: err
-                });
+        var _time = new Date(),
+            _randomNumber = '',
+            _possibleValues = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()abcdefghijklmnopqrstuvwxyz' + _time.getTime();
+            for(var i=0; i< 6; i++) {
+                _randomNumber += _possibleValues.charAt(Math.floor(Math.random() * _possibleValues.length));
+                if(i==5){
+                break
+                }
             }
-            else if (item != null) {
-                productsTotal.findOne({
-                    userId : userId,
-                    date : date,
-                    month : month,
-                    year : year
-                },function(err,data){
-                    if(err){
-                        res.send({
-                            code: 500,
-                            content: 'Not Found product total',
-                            msg: 'Internal Server Error',
-                            error: err
-                        });
-                    }else if(data != null){
-                        var total = data.total + item.total;
-                        productsTotal.update({
-                            userId : userId,
-                            date : date,
-                            month : month,
-                            year : year
-                        },{
-                            $set :{
-                                total : total
-                            }
-                        },function(){
+        usersItems.update({
+                userId : userId
+            },
+            { $push: {userProduct :{
+                productID : _randomNumber,
+                productName: productName,
+                quantity: quantity,
+                pricePerUnit: pricePerUnit,
+                total: total,
+                date : date,
+                month : month,
+                year : year
+            }} },
+            {upsert : true}
+            ,function(err,updatedProd){
+                if(err){
+                    res.send({
+                        code: 500,
+                        content: 'Api not called',
+                        msg: 'Internal Server Error',
+                        error: err
+                    });
+                }
+                else if(updatedProd.n == 1){
+                    productsTotal.findOne({
+                        userId : userId
+                    }, function (err,product) {
+                        if(err){
                             res.send({
-                                code: 200,
-                                content: 'Item saved successfully',
-                                msg: item.productName + ' saved successfully',
-                                product : item
+                                code: 500,
+                                content: 'Api not called',
+                                msg: 'Internal Server Error',
+                                error: err
                             });
-                        })
-                    }else if(data == null){
-                        productsTotal.create({
-                            userId : userId,
-                            date : date,
-                            month : month,
-                            year : year,
-                            total : item.total
-                        },function(err,data2){
-                            if(err){
-                                res.send({
-                                    code: 500,
-                                    content: 'Not Found product total create',
-                                    msg: 'Internal Server Error',
-                                    error: err
+                        }else if(product != null){
+                            productsTotal.update({
+                                    userId : userId,
+                                    userProductTotal : {
+                                        $elemMatch :{
+                                            date : date,
+                                            month : month,
+                                            year : year
+                                        }
+                                    }
+                                },
+                                { $set: {
+                                    "userProductTotal.$.total" : req.body.dayTotal
+                                }
+                                }, function (err,total) {
+                                    if(err){
+                                        res.send({
+                                            code: 500,
+                                            content: 'Api not called',
+                                            msg: 'Internal Server Error',
+                                            error: err
+                                        });
+                                    }else if(total.n == 1){
+                                        var product = {
+                                            productID : _randomNumber,
+                                            productName: productName,
+                                            quantity: quantity,
+                                            pricePerUnit: pricePerUnit,
+                                            total: quantity *pricePerUnit,
+                                            date : date,
+                                            month : month,
+                                            year : year
+                                        };
+                                        res.send({
+                                            code: 200,
+                                            content: 'Saved Successfully',
+                                            msg: 'OK',
+                                            product : product
+                                        });
+                                    }else if(total.n == 0){
+                                        res.send({
+                                            code: 400,
+                                            content: 'Bad Request',
+                                            msg: 'Product Total not updated'
+                                        });
+                                    }
                                 });
-                            }else if(data2 != null){
-                                res.send({
-                                    code: 200,
-                                    content: 'Item saved successfully',
-                                    msg: item.productName + ' saved successfully',
-                                    product : item
-                                });
-                            }
-                        })
-                    }
-                });
-            }
-        })
+                        }
+                        else if(product == null){
+                            productsTotal.create({
+                                userId: userId,
+                                userProductTotal :[{
+                                    date : date,
+                                    month : month,
+                                    year : year,
+                                    total : total
+                                }]
+
+                            },function(err, total){
+                                if(err){
+                                    res.send({
+                                        code: 500,
+                                        content: 'Api not called',
+                                        msg: 'Internal Server Error',
+                                        error: err
+                                    });
+                                }else if(total != null){
+                                    var product = {
+                                        productID : _randomNumber,
+                                        productName: productName,
+                                        quantity: quantity,
+                                        pricePerUnit: pricePerUnit,
+                                        total: quantity *pricePerUnit,
+                                        date : date,
+                                        month : month,
+                                        year : year
+                                    };
+                                    res.send({
+                                        code: 200,
+                                        content: 'Saved Successfully',
+                                        msg: 'OK',
+                                        product : product
+                                    });
+                                }else if(total == null){
+                                    res.send({
+                                        code: 400,
+                                        content: 'Bad Request',
+                                        msg: 'Product Total not updated'
+                                    });
+                                }
+                            })
+                        }
+                    })
+                }
+                else if(updatedProd.n == 0){
+                    res.send({
+                        code: 400,
+                        content: 'Bad Request',
+                        msg: 'Product Total not updated'
+                    });
+                }
+            })
     }
     else {
         res.send({
             code: 404,
             content: 'Not Found',
-            msg: 'Missing Credentials'
-        });
-    }
-});
-router.post('/userItems', function (req, res, next) {
-    var userId = req.body.userId || req.query.userId || req.headers.userid;
-    var productArray = req.body.productArray || req.query.productArray || req.headers.productarray ;
-    if (userId && productArray) {
-
-    }
-    else {
-        res.send({
-            code: 404,
-            content: 'Not Found from save products array',
             msg: 'Missing Credentials'
         });
     }
@@ -133,24 +185,33 @@ router.get('/userItems', function (req, res, next) {
     if (userId && date && month && year) {
         usersItems.find({
             userId: userId,
-            date : date,
-            month : month,
-            year : year
+            userProduct : {
+                $elemMatch:{
+                    date : date,
+                    month : month,
+                    year : year
+                }
+            }
 
         }, function (err, item) {
             if (err) {
                 res.send({
                     code: 500,
-                    content: 'Not Found',
+                    content: 'Api not called',
                     msg: 'Internal Server Error',
                     error: err
                 });
             }
-            else if (item != null) {
+            else if (item[0] != null) {
                 res.send({
                     code: 200,
                     content: 'Products found',
                     products: item
+                });
+            }else{
+                res.send({
+                    code: 404,
+                    content: 'Products not Found'
                 });
             }
         })
@@ -165,18 +226,17 @@ router.get('/userItems', function (req, res, next) {
 });
 router.post('/uploadProductImage', function (req, res, next) {
     var userId = req.body.userId || req.query.userId || req.headers.userid;
-    var _id = req.body._id || req.query._id || req.headers._id;
+    var productID = req.body.productID || req.query.productID || req.headers.productid;
     var _fstream;
     var checked = false;
-    if(userId && _id){
+    if(userId && productID){
         mkdirp('images/' + userId, function (err) {
             if (err) {
                 console.error(err);
                 res.send({
                     code: 500,
                     content: 'Internal Server Error',
-                    msg: 'API not called properly',
-                    token: req.___new__token
+                    msg: 'API not called properly'
                 });
             }
             else {
@@ -190,29 +250,40 @@ router.post('/uploadProductImage', function (req, res, next) {
                         file.pipe(_fstream);
                         _fstream.on('close', function () {
                             var imageURL = 'https://calday.herokuapp.com/getProductImage/?userId=' + userId + "&imageName=" + filename;
-                            mongoose.model('usersItems').update({_id: _id},
-                                {
-                                    $set: {
-                                        image : imageURL
+                            mongoose.model('usersItems').update({
+                                    userId : userId,
+                                    userProduct : {
+                                        $elemMatch :{
+                                            productID : productID
+                                        }
                                     }
+                                },
+                                {
+                                    $set: { "userProduct.$.image" : imageURL}
+
                                 }, function (error, response) {
 
-                                    if (err) {
-                                        console.log('Product not found');
+                                    if (error) {
                                         res.send({
-                                            code: 400,
-                                            content: 'Bad Request',
-                                            msg: 'Error! Image is not uploaded',
-                                            token: req.___new__token
+                                            code: 500,
+                                            content: 'Api not called',
+                                            msg: 'Internal Server error',
+                                            err : error
                                         });
                                     }
-                                    else {
+                                    else if(response.n == 1){
                                         console.log('Picture Response is sent to frontend');
                                         res.send({
                                             code: 200,
                                             content: 'OK',
                                             msg: 'Image is uploaded',
                                             imageURL : imageURL
+                                        });
+                                    }else{
+                                        res.send({
+                                            code: 400,
+                                            content: 'Bad Request',
+                                            msg: 'Product Total not updated'
                                         });
                                     }
                                 });
@@ -264,13 +335,16 @@ router.get('/userItemsByMonth', function (req, res, next) {
     if (userId && month) {
         productsTotal.find({
             userId: userId,
-            month : month
-
+            userProductTotal : {
+                $elemMatch:{
+                    month : month
+                }
+            }
         }, function (err, item) {
             if (err) {
                 res.send({
                     code: 500,
-                    content: 'Not Found',
+                    content: 'Api not called',
                     msg: 'Internal Server Error',
                     error: err
                 });
