@@ -13,7 +13,8 @@ var usersItems = new Schema({
     image : {type : String},
     date : { type : Number},
     month : { type : Number},
-    year : { type : Number}
+    year : { type : Number},
+    quantityUnit : {type : String}
     }]
 });
 
