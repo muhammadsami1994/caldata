@@ -202,11 +202,11 @@ router.post('/userItems', function (req, res, next) {
 });
 router.get('/userItems', function (req, res, next) {
     var userId = req.body.userId || req.query.userId || req.headers.userid;
-    var date = req.body.date || req.query.date || req.headers.date;
-    var month = req.body.month || req.query.month || req.headers.month;
-    var year = req.body.year || req.query.year || req.headers.year;
+    var date = Number(req.body.date || req.query.date || req.headers.date);
+    var month = Number(req.body.month || req.query.month || req.headers.month);
+    var year = Number(req.body.year || req.query.year || req.headers.year);
     if (userId && date && month && year) {
-        usersItems.find({
+        /*usersItems.find({
             userId: userId,
             userProduct: {
                 $elemMatch: {
@@ -230,6 +230,60 @@ router.get('/userItems', function (req, res, next) {
                     code: 200,
                     content: 'Products found',
                     products: item
+                });
+            } else {
+                res.send({
+                    code: 404,
+                    content: 'Products not Found'
+                });
+            }
+        })*/
+        usersItems.aggregate([
+            { $match : {
+                "userId" : userId}
+            },
+            { $unwind : "$userProduct"},
+            {$match : {
+             "userProduct.date" : date,
+             "userProduct.month" : month,
+             "userProduct.year" : year
+            }},
+            { $group : {
+                _id : "$_id",
+                userProduct: {
+                    $push : {
+                        //products : "$userProduct"
+                        "productID": "$userProduct.productID",
+                        "productName": "$userProduct.productName",
+                        "quantity": "$userProduct.quantity",
+                        "pricePerUnit": "$userProduct.pricePerUnit",
+                        "total": "$userProduct.total",
+                        "date": "$userProduct.date",
+                        "month": "$userProduct.month",
+                        "year": "$userProduct.year",
+                        "quantityUnit": "$userProduct.quantityUnit",
+                        "image": {
+                            $cond: { if: { $ne: [ "$userProduct.image", "" ] }, then: "$userProduct.image", else: "" }
+                        }
+
+                    }
+                }
+            }
+            }
+        ],function(err,data){
+            if (err) {
+                res.send({
+                    code: 500,
+                    content: 'Api not called',
+                    msg: 'Internal Server Error',
+                    error: err
+                });
+            }
+            else if (data[0].userProduct[0] != null) {
+                res.send({
+                    code: 200,
+                    content: 'Products found',
+                    products: data
                 });
             } else {
                 res.send({
@@ -354,16 +408,37 @@ router.get('/getProductImage', function (req, res, next) {
 });
 router.get('/userItemsByMonth', function (req, res, next) {
     var userId = req.body.userId || req.query.userId || req.headers.userid;
-    var month = req.body.month || req.query.month || req.headers.month;
+    var month = Number(req.body.month || req.query.month || req.headers.month);
     if (userId && month) {
-        productsTotal.find({
+        productsTotal.aggregate(/*{
             userId: userId,
             userProductTotal: {
                 $elemMatch: {
                     month: month
                 }
             }
-        }, function (err, item) {
+        }*/[
+            { $match : {
+                "userId" : userId}
+            },
+            { $unwind : "$userProductTotal"},
+            {$match : {
+                "userProductTotal.month" : month
+                }
+            },
+            { $group : {
+                _id : "$_id",
+                userProductTotal: {
+                    $push : {
+                        "date": "$userProductTotal.date",
+                        "month": "$userProductTotal.month",
+                        "year": "$userProductTotal.year",
+                        "total": "$userProductTotal.total"
+                    }
+                }
+            }
+            }
+        ], function (err, item) {
             if (err) {
                 res.send({
                     code: 500,
